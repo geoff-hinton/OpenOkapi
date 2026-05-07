@@ -1,0 +1,14 @@
+一. 操作系统：ubuntu18.04
+二. Python 版本：Python 3.6 及以上（脚本使用了 f-string、类型提示非强制，3.6+ 均可）
+三. 第三方库：
+1. matplotlib（绘图、保存图片）matplotlib>=3.3.0
+2. numpy（数组计算、布尔掩码）numpy>=1.19.0
+3. 安装第三方库：
+pyenv global 3.8.2
+python3 -m pip install matplotlib numpy
+4. 查询第三方库的版本：
+pip list | grep -E "matplotlib|numpy"
+matplotlib          3.7.5
+numpy               1.24.4
+
+注意：脚本开头 matplotlib.use('Agg') 将后端设置为非交互式，无需图形界面（如 Tkinter、Qt），可在无显示器（如服务器、容器）中运行。
