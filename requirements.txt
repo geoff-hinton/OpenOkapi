@@ -3,12 +3,17 @@
 三. 第三方库：
 1. matplotlib（绘图、保存图片）matplotlib>=3.3.0
 2. numpy（数组计算、布尔掩码）numpy>=1.19.0
-3. 安装第三方库：
-pyenv global 3.8.2
+3. fonts-wqy-microhei（中文字库）
+4. 安装第三方库：
 python3 -m pip install matplotlib numpy
-4. 查询第三方库的版本：
+sudo apt install fonts-wqy-microhei
+5. 查询第三方库的版本：
+
 pip list | grep -E "matplotlib|numpy"
 matplotlib          3.7.5
 numpy               1.24.4
+
+dpkg -l | grep fonts-wqy-microhei
+ii  fonts-wqy-microhei                         0.2.0-beta-3                                    all          Sans-serif style CJK font derived from Droid
 
 注意：脚本开头 matplotlib.use('Agg') 将后端设置为非交互式，无需图形界面（如 Tkinter、Qt），可在无显示器（如服务器、容器）中运行。
