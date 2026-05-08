@@ -3,7 +3,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// 获取用户参数
+// 获取用户参数（用于表单回显）
 $k = isset($_POST['k']) ? floatval($_POST['k']) : 0.75;
 $val = isset($_POST['val']) ? floatval($_POST['val']) : 600.0;
 $di_dt_max = isset($_POST['di_dt_max']) ? floatval($_POST['di_dt_max']) : 200000.0;
@@ -15,64 +15,75 @@ $val = max(10, min(2000, $val));
 $di_dt_max = max(10000, min(500000, $di_dt_max));
 $dref = max(1000, min(200000, $dref));
 
-// 生成唯一表格文件名
-$timestamp = time() . '_' . bin2hex(random_bytes(4));
-$output_table = "result_{$timestamp}.txt";
-
-// 格式化浮点数（保留一位小数，匹配 Python 输出）
-$formatted_val = number_format($val, 1, '.', '');
-$formatted_di_dt_max = number_format($di_dt_max, 1, '.', '');
-$formatted_dref = number_format($dref, 1, '.', '');
-$output_image = "Figure4_k{$k}_Imax{$formatted_val}_didt{$formatted_di_dt_max}_Dref{$formatted_dref}_dynamic.png";
-
-// Python 脚本路径
-$python_script = __DIR__ . '/okapi.py';
-
-// 构建命令
-$cmd = escapeshellcmd("python3 " . $python_script)
-     . " --k " . escapeshellarg($k)
-     . " --val " . escapeshellarg($val)
-     . " --di_dt_max " . escapeshellarg($di_dt_max)
-     . " --dref " . escapeshellarg($dref)
-     . " --output_table " . escapeshellarg($output_table);
-
-// 执行命令
-$output = shell_exec($cmd . " 2>&1");
-
-// 检查图片是否生成
+// 初始化结果变量（默认空）
 $image_url = '';
-if (file_exists($output_image)) {
-    $image_url = $output_image;
-} else {
-    $pattern = "Figure4_k{$k}_Imax{$formatted_val}_didt{$formatted_di_dt_max}_Dref{$formatted_dref}_dynamic*.png";
-    $files = glob($pattern);
-    if (!empty($files)) {
-        $image_url = $files[0];
-    }
-}
-
-// 读取表格内容
 $table_content = '';
 $table_file_to_show = '';
-if (file_exists($output_table)) {
-    $table_content = file_get_contents($output_table);
-    $table_file_to_show = $output_table;
-    $lines = explode("\n", $table_content);
-    if (count($lines) > 1000) {
-        $table_content = implode("\n", array_slice($lines, 0, 1000)) . "\n... (表格过长，仅显示前1000行，完整内容请下载)";
-    }
-}
+$output = '';
 
-// 清理旧文件（保留最近1小时内的表格和最多100张图片）
-$old_txt = glob("result_*.txt");
-foreach ($old_txt as $f) {
-    if (filemtime($f) < time() - 3600) @unlink($f);
-}
-$old_png = glob("Figure4_*.png");
-if (count($old_png) > 100) {
-    usort($old_png, function($a, $b) { return filemtime($a) - filemtime($b); });
-    $to_delete = array_slice($old_png, 0, count($old_png) - 100);
-    foreach ($to_delete as $f) @unlink($f);
+// 仅在 POST 请求时执行仿真（点击按钮后）
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 生成唯一表格文件名
+    $timestamp = time() . '_' . bin2hex(random_bytes(4));
+    $output_table = "result_{$timestamp}.txt";
+
+    // 格式化浮点数（保留一位小数，匹配 Python 输出）
+    $formatted_val = number_format($val, 1, '.', '');
+    $formatted_di_dt_max = number_format($di_dt_max, 1, '.', '');
+    $formatted_dref = number_format($dref, 1, '.', '');
+
+    // Python 脚本路径
+    $python_script = __DIR__ . '/okapi.py';
+
+    // 构建命令
+    $cmd = escapeshellcmd("python3 " . $python_script)
+         . " --k " . escapeshellarg($k)
+         . " --val " . escapeshellarg($val)
+         . " --di_dt_max " . escapeshellarg($di_dt_max)
+         . " --dref " . escapeshellarg($dref)
+         . " --output_table " . escapeshellarg($output_table);
+
+    // 执行命令
+    $output = shell_exec($cmd . " 2>&1");
+
+    // 1. 优先从输出中解析带时间戳的图片文件名
+    if (preg_match('/图片已保存为:\s*([^\s]+\.png)/', $output, $matches)) {
+        $candidate = trim($matches[1]);
+        if (file_exists($candidate)) {
+            $image_url = $candidate;
+        }
+    }
+
+    // 2. 若解析失败，使用通配符查找（兼容旧版本或无时间戳的文件）
+    if (empty($image_url)) {
+        $pattern = "Figure4_k{$k}_Imax{$formatted_val}_didt{$formatted_di_dt_max}_Dref{$formatted_dref}_dynamic*.png";
+        $files = glob($pattern);
+        if (!empty($files)) {
+            $image_url = $files[0];
+        }
+    }
+
+    // 读取表格内容
+    if (file_exists($output_table)) {
+        $table_content = file_get_contents($output_table);
+        $table_file_to_show = $output_table;
+        $lines = explode("\n", $table_content);
+        if (count($lines) > 1000) {
+            $table_content = implode("\n", array_slice($lines, 0, 1000)) . "\n... (表格过长，仅显示前1000行，完整内容请下载)";
+        }
+    }
+
+    // 清理旧文件（保留最近1小时内的表格和最多100张图片）
+    $old_txt = glob("result_*.txt");
+    foreach ($old_txt as $f) {
+        if (filemtime($f) < time() - 3600) @unlink($f);
+    }
+    $old_png = glob("Figure4_*.png");
+    if (count($old_png) > 100) {
+        usort($old_png, function($a, $b) { return filemtime($a) - filemtime($b); });
+        $to_delete = array_slice($old_png, 0, count($old_png) - 100);
+        foreach ($to_delete as $f) @unlink($f);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -86,7 +97,7 @@ if (count($old_png) > 100) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* 官网完整样式（与 index.html 一致） */
+        /* 官网完整样式 */
         * {
             margin: 0;
             padding: 0;
@@ -132,6 +143,13 @@ if (count($old_png) > 100) {
             font-size: 1.8rem;
             font-weight: 700;
             letter-spacing: -0.02em;
+        }
+        .logo a {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            color: inherit;
             background: linear-gradient(135deg, #d4a5ff, #ffb86b);
             -webkit-background-clip: text;
             background-clip: text;
@@ -295,16 +313,16 @@ if (count($old_png) > 100) {
 <!-- 固定导航栏（与官网一致） -->
 <nav class="navbar">
     <div class="logo">
-    <a href="https://openokapi.com" style="display: flex; align-items: center; gap: 0.6rem; text-decoration: none; color: inherit;">
-        <span style="font-size: 3rem;">🦒</span>
-        <span>OpenOkapi</span>
-    </a>
+        <a href="https://openokapi.com">
+            <span style="font-size: 3rem;">🦒</span>
+            <span>OpenOkapi</span>
+        </a>
     </div>
     <div class="nav-links">
         <a href="https://openokapi.com/">首页</a>
         <a href="https://openokapi.com/#tool">仿真工具</a>
         <a href="https://openokapi.com/#features">技术特性</a>
-        <a href="https://openokapi.com/#gallery">仿真画廊</a>
+        <a href="https://openokapi.com/#gallery">仿真图表</a>
         <a href="https://openokapi.com/#roadmap">路线图</a>
         <a href="https://php.openokapi.com">Web仿真</a>
         <a href="https://openokapi.com/#contact">联系我们</a>
@@ -316,7 +334,7 @@ if (count($old_png) > 100) {
     <section>
         <div class="card" style="margin-top: 1rem;">
             <h2 style="display: flex; align-items: center; gap: 10px;"><i class="fas fa-microchip"></i> 在线储能仿真</h2>
-            <p>基于电网电流斜率的跟随/保持控制策略仿真工具。修改参数后点击「开始仿真」。</p>
+            <p>基于电网电流di/dt的跟随/保持控制策略仿真工具。<br>修改参数后点击「开始仿真」。</p>
             <form method="post">
                 <div class="param-grid">
                     <div class="param-group">
@@ -332,7 +350,7 @@ if (count($old_png) > 100) {
                         <input type="number" step="10000" name="di_dt_max" value="<?= htmlspecialchars($di_dt_max) ?>" required>
                     </div>
                     <div class="param-group">
-                        <label>电网电流斜率阈值 Dref (A/s)</label>
+                        <label>电网电流di/dt阈值 Dref (A/s)</label>
                         <input type="number" step="1000" name="dref" value="<?= htmlspecialchars($dref) ?>" required>
                     </div>
                 </div>
@@ -369,9 +387,9 @@ if (count($old_png) > 100) {
     </section>
 </main>
 
-<!-- 页脚（与官网一致） -->
+<!-- 页脚 -->
 <footer>
-    <p>© 2026 OpenOkapi · 开源储能仿真工具 · 基于电流斜率的动态响应算法</p>
+    <p>© 2026 OpenOkapi · 开源储能仿真工具 · 基于电流di/dt的动态响应算法</p>
     <p style="margin-top: 0.8rem; font-size: 0.9rem;">MIT License · 灵感源自 Okapi 的优雅条纹与电力暂态波形</p>
     <!-- Matomo 统计保留 -->
     <script>
