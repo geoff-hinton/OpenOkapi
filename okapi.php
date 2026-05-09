@@ -92,12 +92,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>OpenOkapi · Web仿真 · 储能动态响应工具</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- 系统字体 + 稳定 CDN -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
     <style>
-        /* 官网完整样式 */
+        /* ========== 基础样式（暗色主题默认） ========== */
         * {
             margin: 0;
             padding: 0;
@@ -110,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             line-height: 1.6;
             scroll-behavior: smooth;
             padding-top: 80px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         :root {
             --zebra-light: rgba(255, 255, 255, 0.03);
@@ -118,6 +120,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --primary-glow: #b77cf2;
             --accent: #ffb86b;
         }
+
+        /* 亮色主题样式 */
+        body.light-mode {
+            background-color: #f5f5f5;
+            color: #1e1e1e;
+        }
+        body.light-mode .navbar {
+            background: rgba(245, 245, 245, 0.9);
+            border-bottom-color: rgba(100, 100, 100, 0.2);
+        }
+        body.light-mode .nav-links a {
+            color: #333;
+        }
+        body.light-mode .nav-links a:hover {
+            color: #b77cf2;
+        }
+        body.light-mode .logo a {
+            background: linear-gradient(135deg, #b77cf2, #ff9f4a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        body.light-mode .card {
+            background: #ffffff;
+            border-color: #ddd;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        body.light-mode .card p {
+            color: #555;
+        }
+        body.light-mode .param-group input {
+            background: #f0f0f0;
+            border-color: #ccc;
+            color: #111;
+        }
+        body.light-mode .param-group label {
+            color: #b77cf2;
+        }
+        body.light-mode button {
+            background: #b77cf2;
+            color: #fff;
+        }
+        body.light-mode button:hover {
+            background: #9f5ad9;
+        }
+        body.light-mode pre {
+            background: #e9e9e9;
+            color: #1e1e1e;
+            border-left-color: #b77cf2;
+        }
+        body.light-mode .error-msg {
+            background: #ffe0e0;
+            color: #c00;
+        }
+        body.light-mode footer {
+            border-top-color: #ccc;
+        }
+        body.light-mode .download-link {
+            color: #b77cf2;
+        }
+
         .navbar {
             position: fixed;
             top: 0;
@@ -135,6 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flex-wrap: wrap;
             gap: 1.5rem;
             box-shadow: 0 4px 30px rgba(0,0,0,0.8);
+            transition: background 0.3s, border-color 0.3s;
         }
         .logo {
             display: flex;
@@ -165,19 +229,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             gap: 2.2rem;
             font-weight: 500;
             flex-wrap: wrap;
+            align-items: center;
         }
-        .nav-links a {
-            color: #ccc;
-            text-decoration: none;
-            font-size: 1.1rem;
+.nav-links a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: 0.2s;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 4px;
+}
+.nav-links a:hover {
+    color: #d4a5ff;
+    border-bottom-color: #d4a5ff;
+}
+        /* 主题切换按钮样式 */
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.4rem;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.2rem 0.4rem;
+            border-radius: 40px;
             transition: 0.2s;
-            border-bottom: 2px solid transparent;
-            padding-bottom: 4px;
+            margin-left: 0.2rem;
         }
-        .nav-links a:hover {
+        .theme-toggle:hover {
             color: #d4a5ff;
-            border-bottom-color: #d4a5ff;
+            transform: scale(1.05);
         }
+        body.light-mode .theme-toggle:hover {
+            color: #b77cf2;
+        }
+
         .container {
             max-width: 1300px;
             margin: 0 auto;
@@ -310,11 +399,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-<!-- 固定导航栏（与官网一致） -->
+<!-- 固定导航栏：增加主题切换按钮 -->
 <nav class="navbar">
     <div class="logo">
         <a href="https://openokapi.com">
-            <span style="font-size: 3rem;">🦒</span>
+            <img src="./okapi.png" alt="Okapi" style="height: 3rem; width: auto;">
             <span>OpenOkapi</span>
         </a>
     </div>
@@ -326,10 +415,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="https://openokapi.com/#roadmap">路线图</a>
         <a href="https://php.openokapi.com">Web仿真</a>
         <a href="https://openokapi.com/#contact">联系我们</a>
+        <!-- 开灯/关灯按钮 -->
+        <button class="theme-toggle" id="themeToggle" aria-label="切换明暗主题">
+            <i class="fas fa-moon"></i>
+        </button>
     </div>
 </nav>
-</br>
-</br>
+
 <main class="container">
     <section>
         <div class="card" style="margin-top: 1rem;">
@@ -354,11 +446,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="number" step="1000" name="dref" value="<?= htmlspecialchars($dref) ?>" required>
                     </div>
                 </div>
-                <button type="submit"><i class="fas fa-play"></i> 开始仿真</button>
+                <button type="submit">📊开始仿真</button>
             </form>
         </div>
-</br>
-</br>
+        <br><br>
+
         <?php if ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
         <div class="card">
             <h2>仿真结果</h2>
@@ -378,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <?php if ($table_content): ?>
-            <h3>数据表格</h3>
+            <h2>数据表格</h2>
             <pre><?= htmlspecialchars($table_content) ?></pre>
             <a href="<?= htmlspecialchars($table_file_to_show) ?>" class="download-link" download>📥 下载完整表格 (TXT)</a>
             <?php endif; ?>
@@ -387,7 +479,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </section>
 </main>
 
-<!-- 页脚 -->
 <footer>
     <p>© 2026 OpenOkapi · 开源储能仿真工具 · 基于电流di/dt的动态响应算法</p>
     <p style="margin-top: 0.8rem; font-size: 0.9rem;">MIT License · 灵感源自 Okapi 的优雅条纹与电力暂态波形</p>
@@ -405,5 +496,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       })();
     </script>
 </footer>
+
+<!-- 主题切换脚本 -->
+<script>
+    (function() {
+        const toggleBtn = document.getElementById('themeToggle');
+        const icon = toggleBtn.querySelector('i');
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme === 'light') {
+            document.body.classList.add('light-mode');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            if (isLight) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    })();
+</script>
 </body>
 </html>
