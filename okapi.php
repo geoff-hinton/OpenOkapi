@@ -481,7 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <footer>
     <p>© 2026 OpenOkapi · 开源储能仿真工具 · 基于电流di/dt的动态响应算法</p>
-    <p style="margin-top: 0.8rem; font-size: 0.9rem;">MIT License · 灵感源自 Okapi 的优雅条纹与电力暂态波形</p>
+    <p style="margin-top: 0.8rem; font-size: 0.9rem;">GPL-3.0 License · 灵感源自 Okapi 的优雅条纹与电力暂态波形</p>
     <!-- Matomo 统计保留 -->
     <script>
       var _paq = window._paq = window._paq || [];
